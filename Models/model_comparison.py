@@ -1,6 +1,7 @@
+import ast
+import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.compose import make_column_transformer
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold, cross_validate
@@ -10,74 +11,104 @@ from xgboost import XGBClassifier
 
 CV = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
-
-# Here we mess with the metrics for model evaluation
 def eval_model(model, X_train, y_train):
     metrics = {
         "accuracy": "accuracy",
-        "f1_macro": "f1_macro",
         "neg_log_loss": "neg_log_loss",
     }
 
-    cv_results = cross_validate(model, X_train, y_train, cv=CV, scoring=metrics, n_jobs=-1)
+    # CRITICAL: Added return_train_score=True to analyze over/underfitting
+    cv_results = cross_validate(
+        model, X_train, y_train, cv=CV, scoring=metrics, n_jobs=-1, return_train_score=True
+    )
 
     results = {
-        "accuracy": (
-            cv_results["test_accuracy"].mean(),
-            cv_results["test_accuracy"].std(),
-        ),
-        "f1_macro": (
-            cv_results["test_f1_macro"].mean(),
-            cv_results["test_f1_macro"].std(),
-        ),
-        "log_loss": (
-            -cv_results["test_neg_log_loss"].mean(),
-            cv_results["test_neg_log_loss"].std(),
-        ),
+        "Train Accuracy": cv_results["train_accuracy"].mean(),
+        "Val Accuracy": cv_results["test_accuracy"].mean(),
+        "Val Accuracy Std": cv_results["test_accuracy"].std(),
+        "Val Log Loss": -cv_results["test_neg_log_loss"].mean(),
     }
-
     return results
 
+def expand_vector_columns(df, columns_to_expand):
+    """Converts string representation of lists '[0,1,0...]' into individual columns."""
+    expanded_dfs = []
+    columns_to_drop = []
+    
+    for col in columns_to_expand:
+        if col in df.columns:
+            print(f"Expanding 40-bit vector: {col}...")
+            # Safely parse string arrays back into actual list objects
+            parsed_series = df[col].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+            
+            # Create 40 distinct column headers for the matrix
+            matrix = np.array(parsed_series.tolist())
+            new_cols = [f"{col}_{i}" for i in range(matrix.shape[1])]
+            
+            expanded_dfs.append(pd.DataFrame(matrix, columns=new_cols, index=df.index))
+            columns_to_drop.append(col)
+            
+    df = df.drop(columns=columns_to_drop)
+    if expanded_dfs:
+        df = pd.concat([df] + expanded_dfs, axis=1)
+    return df
 
-# Here we define the features, target and models (using the above given metrics)
 def main(path, target_column):
+    print("Loading data...")
     df = pd.read_csv(path)
 
-    X = df.drop(columns=[target_column])
+    # 1. Expand the 40-bit array lists into unique column features
+    vector_cols = ['cards_on_table_snapshot', 'hand_before_play', 'legal_moves_play']
+    df = expand_vector_columns(df, vector_cols)
+
+    # 2. Prevent Data Leakage by removing identifier metadata columns
+    # We drop game_number completely. We keep round_number, round_points, etc. as active features.
+    columns_to_drop = [target_column, 'game_number']
+    
+    X = df.drop(columns=[col for col in columns_to_drop if col in df.columns])
     y = df[target_column]
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+    # Handle any potential missing fields gracefully
+    X = X.fillna(-1)
 
-    # Models (wow)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+
     models = {
         "Logistic Regression": make_pipeline(
             StandardScaler(),
-            LogisticRegression(multi_class="multinomial", max_iter=2000),
+            LogisticRegression(max_iter=1000, random_state=42),
         ),
         "Gradient Boosting": HistGradientBoostingClassifier(random_state=42),
         "XGBoost": XGBClassifier(
-            objective="multi:softprob", eval_metric="mlogloss", random_state=42
+            objective="multi:softprob", 
+            eval_metric="mlogloss", 
+            random_state=42,
+            n_jobs=-1
         ),
     }
 
-    # Here we test all the models and evaluate them based on the given metrics
     for name, model in models.items():
         print(f"\n=== Evaluating {name} via 5-Fold CV ===")
-        cv_metrics = eval_model(model, X_train, y_train)
+        metrics = eval_model(model, X_train, y_train)
 
-        for metric, (mean, std) in cv_metrics.items():
-            print(f"{metric.capitalize()}: {mean:.4f} (+/- {std:.4f})")
+        for metric_name, value in metrics.items():
+            if "Std" in metric_name:
+                print(f"  {metric_name}: +/- {value:.4f}")
+            else:
+                print(f"  {metric_name}: {value:.4f}")
 
-
+        # Final Holdout evaluation block
+        print(f"Fitting final {name} model on full training subset...")
         model.fit(X_train, y_train)
         test_acc = model.score(X_test, y_test)
-        print("Accuracy: " + test_acc)
+        print(f"  --> Final Unseen Holdout Test Accuracy: {test_acc:.4f}")
 
 
 if __name__ == "__main__":
-
-    # We edit these 2 values to get the data + target
-    dataset = "dataset.csv"
-    target = "best card"
+    # change this files when dataset is available
+    dataset = "../Dataset/batch_rounds_flat_turns.csv" 
+    target = "TARGET_card_played"
 
     main(dataset, target)

@@ -9,16 +9,6 @@ from tkinter.filedialog import askopenfilename
 
 trump_map = {'♣': 0, '♦': 1, '♥': 2, '♠': 3}
 position_map = {'NORTH': 0, 'WEST': 1, 'SOUTH': 2, 'EAST': 3}
-output_base_columns = [
-    'game_number',
-    'round_number',
-    'round_points',
-    'round_winner_team',
-    'team1_before',
-    'team2_before',
-    'team1_after',
-    'team2_after',
-]
 
 def parse_cards_played(text):
     if not text:
@@ -92,54 +82,6 @@ def parse_int(value):
     except (TypeError, ValueError):
         return value
 
-def build_clean_row(row):
-    cards_played_parsed = parse_cards_played(row.get('cards_played'))
-    round_actions_parsed = parse_round_actions(row.get('round_actions'))
-
-    cleaned_row = {
-        'game_number': parse_int(row.get('game_number')),
-        'round_number': parse_int(row.get('round_number')),
-        'round_points': parse_int(row.get('round_points')),
-        'round_winner_team': row.get('round_winner_team'),
-        'team1_before': parse_int(row.get('team1_before')),
-        'team2_before': parse_int(row.get('team2_before')),
-        'team1_after': parse_int(row.get('team1_after')),
-        'team2_after': parse_int(row.get('team2_after')),
-        'trump': encode_suit(round_actions_parsed[0].get('trump')) if round_actions_parsed else None,
-        'lead_suit': first_non_null_suit(round_actions_parsed),
-    }
-
-    for index in range(4):
-        play = cards_played_parsed[index] if len(cards_played_parsed) > index else (None, None)
-        action = get_round_action(round_actions_parsed, index)
-
-        cleaned_row[f'play_{index + 1}_position'] = play[0]
-        cleaned_row[f'play_{index + 1}_card'] = play[1]
-        cleaned_row[f'cards_in_trick_{index + 1}'] = action_to_bits(action, 'cards_in_trick')
-        cleaned_row[f'hand_before_play_{index + 1}'] = action_to_bits(action, 'hand_before')
-        cleaned_row[f'legal_moves_play_{index + 1}'] = action_to_bits(action, 'legal_moves')
-
-    return cleaned_row
-
-def ordered_output_columns():
-    ordered_columns = list(output_base_columns)
-    ordered_columns.append('trump')
-
-    for index in range(4):
-        ordered_columns.extend([
-            f'play_{index + 1}_position',
-            f'play_{index + 1}_card',
-            f'cards_in_trick_{index + 1}',
-        ])
-        if index == 0:
-            ordered_columns.append('lead_suit')
-        ordered_columns.extend([
-            f'hand_before_play_{index + 1}',
-            f'legal_moves_play_{index + 1}',
-        ])
-
-    return ordered_columns
-
 def serialize_value(value):
     if isinstance(value, list):
         return json.dumps(value, ensure_ascii=False, separators=(',', ':'))
@@ -147,21 +89,78 @@ def serialize_value(value):
         return ''
     return value
 
+# --- NEW FUNCTION: Splits 1 round into up to 4 individual turns ---
+def build_clean_turns(row):
+    cards_played_parsed = parse_cards_played(row.get('cards_played'))
+    round_actions_parsed = parse_round_actions(row.get('round_actions'))
+
+    trump = encode_suit(round_actions_parsed[0].get('trump')) if round_actions_parsed else None
+    lead_suit = first_non_null_suit(round_actions_parsed)
+
+    turn_rows = []
+    cards_on_table = [0] * 40  # Tracks what has already been played in this trick
+
+    # Loop through each player's action inside the round
+    for index in range(len(round_actions_parsed)):
+        action = get_round_action(round_actions_parsed, index)
+        play = cards_played_parsed[index] if len(cards_played_parsed) > index else (None, None)
+
+        # Skip if there's missing action or target data
+        if not action or play[1] is None:
+            continue
+
+        turn_row = {
+            'game_number': parse_int(row.get('game_number')),
+            'round_number': parse_int(row.get('round_number')),
+            'round_points': parse_int(row.get('round_points')),
+            'team1_before': parse_int(row.get('team1_before')),
+            'team2_before': parse_int(row.get('team2_before')),
+            'trump': trump,
+            'lead_suit': lead_suit,
+            'player_position': play[0],
+            'position_in_trick': action.get('position_in_trick'),
+            'cards_on_table_snapshot': list(cards_on_table), # Cards on table BEFORE this play
+            'hand_before_play': action_to_bits(action, 'hand_before'),
+            'legal_moves_play': action_to_bits(action, 'legal_moves'),
+            'TARGET_card_played': play[1] # The label we want to predict
+        }
+        
+        turn_rows.append(turn_row)
+
+        # Add this played card to the table tracker so the NEXT player sees it
+        played_card_id = play[1]
+        if 0 <= played_card_id < 40:
+            cards_on_table[played_card_id] = 1
+
+    return turn_rows
+
+# --- UPDATED FUNCTION: Handles writing the flat turns into the final CSV ---
 def clean_dataset(data_path, output_path=None):
+    all_flattened_turns = []
+
     with open(data_path, 'r', encoding='utf-8-sig', newline='') as input_file:
         reader = csv.DictReader(input_file)
-        cleaned_rows = [build_clean_row(row) for row in reader]
+        for row in reader:
+            # We use .extend() because build_clean_turns returns a list of up to 4 items
+            all_flattened_turns.extend(build_clean_turns(row))
 
     if output_path is None:
-        output_path = str(Path(data_path).with_name(f'{Path(data_path).stem}_cleaned.csv'))
+        output_path = str(Path(data_path).with_name(f'{Path(data_path).stem}_flat_turns.csv'))
 
-    fieldnames = ordered_output_columns()
+    # Clean, flat column headers for Machine Learning
+    fieldnames = [
+        'game_number', 'round_number', 'round_points', 'team1_before', 'team2_before',
+        'trump', 'lead_suit', 'player_position', 'position_in_trick',
+        'cards_on_table_snapshot', 'hand_before_play', 'legal_moves_play', 'TARGET_card_played'
+    ]
+
     with open(output_path, 'w', encoding='utf-8', newline='') as output_file:
         writer = csv.DictWriter(output_file, fieldnames=fieldnames)
         writer.writeheader()
-        for row in cleaned_rows:
+        for row in all_flattened_turns:
             writer.writerow({column: serialize_value(row.get(column)) for column in fieldnames})
 
+    print(f"Data conversion complete! Output saved to: {output_path}")
     return output_path
 
 if __name__ == '__main__':
