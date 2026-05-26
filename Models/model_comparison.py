@@ -8,16 +8,31 @@ from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
+from sklearn.metrics import make_scorer, top_k_accuracy_score
 
 CV = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
+# Number of games we want to use as the dataset
+# The current limit is 10000, but we may want less for better performance
+NUM_GAMES = 5000
+
+
+# New top k accuracy metric
+top3_scorer = make_scorer(
+    top_k_accuracy_score, 
+    k=3, 
+    response_method='predict_proba',
+    labels=list(range(40))
+)
+
+# Method for the way the model is evaluated
 def eval_model(model, X_train, y_train):
     metrics = {
         "accuracy": "accuracy",
         "neg_log_loss": "neg_log_loss",
+        "top3_accuracy": top3_scorer,
     }
 
-    # CRITICAL: Added return_train_score=True to analyze over/underfitting
     cv_results = cross_validate(
         model, X_train, y_train, cv=CV, scoring=metrics, n_jobs=-1, return_train_score=True
     )
@@ -27,18 +42,18 @@ def eval_model(model, X_train, y_train):
         "Val Accuracy": cv_results["test_accuracy"].mean(),
         "Val Accuracy Std": cv_results["test_accuracy"].std(),
         "Val Log Loss": -cv_results["test_neg_log_loss"].mean(),
+        "Val Top-3 Accuracy": cv_results["test_top3_accuracy"].mean()
     }
     return results
 
+# Method that converts the 40-bit vectors of the cards into separate columns
 def expand_vector_columns(df, columns_to_expand):
-    """Converts string representation of lists '[0,1,0...]' into individual columns."""
     expanded_dfs = []
     columns_to_drop = []
     
     for col in columns_to_expand:
         if col in df.columns:
             print(f"Expanding 40-bit vector: {col}...")
-            # Safely parse string arrays back into actual list objects
             parsed_series = df[col].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
             
             # Create 40 distinct column headers for the matrix
@@ -56,6 +71,9 @@ def expand_vector_columns(df, columns_to_expand):
 def main(path, target_column):
     print("Loading data...")
     df = pd.read_csv(path)
+
+    df = df.head(40 * NUM_GAMES)
+
 
     # 1. Expand the 40-bit array lists into unique column features
     vector_cols = ['cards_on_table_snapshot', 'hand_before_play', 'legal_moves_play']
@@ -102,8 +120,15 @@ def main(path, target_column):
         # Final Holdout evaluation block
         print(f"Fitting final {name} model on full training subset...")
         model.fit(X_train, y_train)
+        
+        # 1. Standard Top-1 Accuracy
         test_acc = model.score(X_test, y_test)
-        print(f"  --> Final Unseen Holdout Test Accuracy: {test_acc:.4f}")
+        print(f"  --> Final Unseen Holdout Test Accuracy (Top-1): {test_acc:.4f}")
+        
+        # 2. Top-3 Accuracy on Holdout
+        test_probabilities = model.predict_proba(X_test)
+        test_top3_acc = top_k_accuracy_score(y_test, test_probabilities, k=3, labels=list(range(40)))
+        print(f"  --> Final Unseen Holdout Top-3 Accuracy: {test_top3_acc:.4f}")
 
 
 if __name__ == "__main__":
