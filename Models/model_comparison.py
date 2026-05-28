@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 CV = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
 # Number of games we want to use as the dataset
-# The current limit is 10000, but we may want less for better performance
 NUM_GAMES = 10000
 
 
@@ -94,7 +93,7 @@ def plot_model_comparison(results_dict, filename="model_comparison.png"):
 
     plt.tight_layout()
     plt.savefig(filename)
-    print(f"\n📊 Saved comparison plot to {filename}")
+    print(f"Saved comparison plot to {filename}")
 
 def main(path, target_column):
     print("Loading data...")
@@ -126,7 +125,13 @@ def main(path, target_column):
             StandardScaler(),
             LogisticRegression(max_iter=1000, random_state=42, solver='lbfgs', C=10.0),
         ),
-        "Gradient Boosting": HistGradientBoostingClassifier(random_state=42, learning_rate=0.03, max_depth=None, max_leaf_nodes=31, min_samples_leaf=20),
+        "Gradient Boosting": HistGradientBoostingClassifier(
+            random_state=42, 
+            learning_rate=0.03, 
+            max_depth=None, 
+            max_leaf_nodes=31, 
+            min_samples_leaf=20
+        ),
         "XGBoost": XGBClassifier(
             objective="multi:softprob", 
             eval_metric="mlogloss", 

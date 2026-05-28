@@ -10,10 +10,15 @@ from pathlib import Path
 
 import requests
 
-try:
-    import redis  # type: ignore[import-not-found]
-except ImportError:
-    redis = None
+
+DEFAULT_BASE_URL = "http://127.0.0.1:5000"
+GAME_ID_REQUIRED_MESSAGE = "game_id is required"
+
+
+def _require_game_id(game_id):
+    if not game_id:
+        raise ValueError(GAME_ID_REQUIRED_MESSAGE)
+    return game_id
 
 
 def _is_transient_connection_error(ex):
@@ -35,11 +40,13 @@ def _wait_for_server(base_url, max_wait_sec=30, probe_interval_sec=1.0):
     deadline = time.time() + max(0.0, float(max_wait_sec))
     probe_url = f"{str(base_url).rstrip('/')}/api/status"
     while time.time() < deadline:
-    
-        # Endpoint may return non-200 when no default game exists; reachability is enough.
-        requests.get(probe_url, timeout=1.5)
-        return True
-        
+        try:
+            # Endpoint may return non-200 when no default game exists; reachability is enough.
+            requests.get(probe_url, timeout=1.5)
+            return True
+        except requests.exceptions.RequestException:
+            time.sleep(max(0.1, float(probe_interval_sec)))
+
     return False
 
 
@@ -87,7 +94,7 @@ class DataGatherer:
         self,
         game_number,
         agents,
-        base_url="http://127.0.0.1:5000",
+        base_url=DEFAULT_BASE_URL,
         poll_interval=0.05,
         capture_timeline=True,
         fetch_hands=False,
@@ -322,15 +329,11 @@ class DataGatherer:
         return data
 
     def get_status(self, game_id=None):
-        target_game_id = game_id or self.game_id
-        if not target_game_id:
-            raise ValueError("game_id is required")
+        target_game_id = _require_game_id(game_id or self.game_id)
         return self._request("GET", f"/api/status?game_id={target_game_id}")
 
     def get_history(self, game_id=None):
-        target_game_id = game_id or self.game_id
-        if not target_game_id:
-            raise ValueError("game_id is required")
+        target_game_id = _require_game_id(game_id or self.game_id)
         return self._request("GET", f"/api/room/{target_game_id}/history")
 
     def _append_timeline(self, state):
@@ -528,9 +531,7 @@ class DataGatherer:
         self.game_data["rounds_played"] = self._infer_rounds_played()
 
     def collect_until_finished(self, game_id=None, timeout_sec=180):
-        target_game_id = game_id or self.game_id
-        if not target_game_id:
-            raise ValueError("game_id is required")
+        target_game_id = _require_game_id(game_id or self.game_id)
         self.game_id = target_game_id
         self.game_data["game_id"] = target_game_id
 
@@ -685,12 +686,6 @@ class DataGatherer:
             "saved_at_epoch": time.time(),
         }
 
-    def save_to_redis(self, redis_client, key_prefix="sueca:game"):
-        game_id = self.game_data.get("game_id") or f"unknown_{self.game_data.get('game_number', 0)}"
-        redis_key = f"{key_prefix}:{game_id}"
-        redis_client.set(redis_key, json.dumps(self.redis_document(), ensure_ascii=False))
-        return redis_key
-
     def save_csv(self, output_path):
         rows = self._csv_rows()
         output_dir = os.path.dirname(output_path)
@@ -728,13 +723,6 @@ class DataGatherer:
             writer.writeheader()
             writer.writerows(rows)
         return output_path
-
-    @staticmethod
-    def _safe_int(value):
-        try:
-            return int(value)
-        except (TypeError, ValueError):
-            return 0
 
     @staticmethod
     def _compact_cards(cards):
@@ -877,14 +865,12 @@ class DataGatherer:
     def run_batch(
         match_count,
         output_dir,
-        base_url="http://127.0.0.1:5000",
+        base_url=DEFAULT_BASE_URL,
         timeout_sec=180,
         poll_interval=0.25,
         join_timeout_sec=2.0,
         bots=None,
         split_csv=False,
-        redis_client=None,
-        redis_key_prefix="sueca:game",
         workers=1,
         continue_on_error=True,
         match_retries=2,
@@ -954,8 +940,16 @@ class DataGatherer:
             progress_completed += 1
             _update_progress()
 
+        def _record_success(result):
+            manifest.append({k: v for k, v in result.items() if k not in {"summary_row", "round_rows"}})
+            if split_csv:
+                batch_summary_rows.append(result["summary_row"])
+                batch_round_rows.extend(result["round_rows"])
+
         def _run_single_match(i):
-            effective_poll_interval = min(float(poll_interval), 0.005 if fast_mode else float(poll_interval))
+            effective_poll_interval = float(poll_interval)
+            if fast_mode:
+                effective_poll_interval = min(effective_poll_interval, 0.005)
             match_start = time.monotonic()
             gatherer = DataGatherer(
                 game_number=i,
@@ -998,10 +992,6 @@ class DataGatherer:
                 csv_path = games_dir / f"game_data_{i:03d}_{game_id}.csv"
                 gatherer.save_csv(str(csv_path))
 
-            redis_key = None
-            if redis_client is not None:
-                redis_key = gatherer.save_to_redis(redis_client, key_prefix=redis_key_prefix)
-
             actions_csv_path = None
             if save_game_files:
                 actions_csv_path = games_dir / f"actions_{i:03d}_{game_id}.csv"
@@ -1018,7 +1008,6 @@ class DataGatherer:
                 "winner_team": gatherer.game_data.get("winner_team"),
                 "winner_label": gatherer.game_data.get("winner_label"),
                 "final_scores": gatherer.game_data.get("final_scores"),
-                "redis_key": redis_key,
                 "summary_row": summary_row,
                 "round_rows": round_rows,
                 "actions_csv": str(actions_csv_path) if actions_csv_path else None,
@@ -1047,10 +1036,7 @@ class DataGatherer:
             for i in range(1, total_matches + 1):
                 try:
                     result = _run_single_match_with_retries(i)
-                    manifest.append({k: v for k, v in result.items() if k not in {"summary_row", "round_rows"}})
-                    if split_csv:
-                        batch_summary_rows.append(result["summary_row"])
-                        batch_round_rows.extend(result["round_rows"])
+                    _record_success(result)
                     consecutive_connection_errors = 0
                     _mark_progress_step()
                 except KeyboardInterrupt:
@@ -1072,10 +1058,7 @@ class DataGatherer:
                         if recovered:
                             try:
                                 result = _run_single_match_with_retries(i)
-                                manifest.append({k: v for k, v in result.items() if k not in {"summary_row", "round_rows"}})
-                                if split_csv:
-                                    batch_summary_rows.append(result["summary_row"])
-                                    batch_round_rows.extend(result["round_rows"])
+                                _record_success(result)
                                 consecutive_connection_errors = 0
                                 _mark_progress_step()
                                 continue
@@ -1121,10 +1104,7 @@ class DataGatherer:
                     i = future_map[future]
                     try:
                         result = future.result()
-                        manifest.append({k: v for k, v in result.items() if k not in {"summary_row", "round_rows"}})
-                        if split_csv:
-                            batch_summary_rows.append(result["summary_row"])
-                            batch_round_rows.extend(result["round_rows"])
+                        _record_success(result)
                         _mark_progress_step()
                     except KeyboardInterrupt:
                         interrupted = True
@@ -1342,25 +1322,6 @@ def _parse_combinations_from_args(args):
     return _dedupe_labels(combinations)
 
 
-def _make_redis_client(args):
-    if not args.save_to_redis:
-        return None
-    if redis is None:
-        raise RuntimeError("redis package is not installed. Install with: pip install redis")
-
-    client = redis.Redis(
-        host=args.redis_host,
-        port=int(args.redis_port),
-        db=int(args.redis_db),
-        password=args.redis_password,
-        decode_responses=True,
-        socket_connect_timeout=3,
-        socket_timeout=3,
-    )
-    client.ping()
-    return client
-
-
 def _resolve_output_dir_with_generation(output_dir, generation):
     base = Path(output_dir)
     if not generation:
@@ -1409,7 +1370,7 @@ def _default_bots():
 
 def main():
     parser = argparse.ArgumentParser(description="Collect bot match metrics from Sueca server")
-    parser.add_argument("--base-url", default="http://127.0.0.1:5000")
+    parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
     parser.add_argument("--game-id", default=None, help="Existing game id to observe")
     parser.add_argument("--create-match", action="store_true", help="Create a new 4-bot match first")
     parser.add_argument("--matches", type=int, default=1, help="Run N bot matches (batch mode)")
@@ -1458,18 +1419,11 @@ def main():
     parser.add_argument("--combinations-files", nargs="+", default=None, help="Multiple combination files to merge and run")
     parser.add_argument("--name-by-difficulty", action="store_true", help="Use difficulty distribution as folder label")
     parser.add_argument("--games-per-combination", type=int, default=10000, help="Games per lineup in combinations mode")
-    parser.add_argument("--save-to-redis", action="store_true", help="Persist each game in Redis")
-    parser.add_argument("--redis-host", default="127.0.0.1")
-    parser.add_argument("--redis-port", type=int, default=6379)
-    parser.add_argument("--redis-db", type=int, default=0)
-    parser.add_argument("--redis-password", default=None)
-    parser.add_argument("--redis-key-prefix", default="sueca:game")
     parser.add_argument("--fetch-hands", action="store_true", help="Fetch player hand info during polling (slower, detailed actions)")
     parser.add_argument("--capture-timeline", action="store_true", help="Capture full state timeline during polling (slower, detailed analysis)")
     parser.add_argument("--fast-inproc", action="store_true", help="Run matches in-process without HTTP/threads (very fast)")
     args = parser.parse_args()
 
-    redis_client = _make_redis_client(args)
     combinations = _parse_combinations_from_args(args)
     selected_bots = _parse_bots_from_args(args)
     fast_mode = not args.slow_mode
@@ -1497,8 +1451,6 @@ def main():
                     join_timeout_sec=args.join_timeout_sec,
                     bots=combo["bots"],
                     split_csv=args.split_csv,
-                    redis_client=redis_client,
-                    redis_key_prefix=args.redis_key_prefix,
                     workers=args.workers,
                     continue_on_error=args.continue_on_error,
                     match_retries=args.match_retries,
@@ -1522,8 +1474,6 @@ def main():
                         "join_timeout_sec": args.join_timeout_sec,
                         "split_csv": args.split_csv,
                         "save_game_files": (not args.no_game_files),
-                        "save_to_redis": args.save_to_redis,
-                        "redis_key_prefix": args.redis_key_prefix,
                         "bots": combo.get("bots"),
                         "fetch_hands": args.fetch_hands,
                         "capture_timeline": args.capture_timeline,
@@ -1565,8 +1515,6 @@ def main():
                 join_timeout_sec=args.join_timeout_sec,
                 bots=selected_bots,
                 split_csv=args.split_csv,
-                redis_client=redis_client,
-                redis_key_prefix=args.redis_key_prefix,
                 workers=args.workers,
                 continue_on_error=args.continue_on_error,
                 match_retries=args.match_retries,
@@ -1588,8 +1536,6 @@ def main():
                     "join_timeout_sec": args.join_timeout_sec,
                     "split_csv": args.split_csv,
                     "save_game_files": (not args.no_game_files),
-                    "save_to_redis": args.save_to_redis,
-                    "redis_key_prefix": args.redis_key_prefix,
                     "bots": selected_bots,
                     "fetch_hands": args.fetch_hands,
                     "capture_timeline": args.capture_timeline,
@@ -1636,9 +1582,6 @@ def main():
     else:
         payload = gatherer.collect_until_finished(timeout_sec=args.timeout_sec)
     gatherer.save_json(args.output)
-    redis_key = None
-    if redis_client is not None:
-        redis_key = gatherer.save_to_redis(redis_client, key_prefix=args.redis_key_prefix)
     csv_output = args.csv_output
     if not csv_output:
         base, _ = os.path.splitext(args.output)
@@ -1654,8 +1597,6 @@ def main():
         print(f"Saved rounds CSV to: {rounds_path}")
     else:
         print(f"Saved CSV to: {csv_output}")
-    if redis_key:
-        print(f"Saved Redis key: {redis_key}")
     print(json.dumps(payload["game_data"], indent=2, ensure_ascii=False))
 
 
