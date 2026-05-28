@@ -78,17 +78,17 @@ def plot_model_comparison(results_dict, filename="model_comparison.png"):
     log_loss = [results_dict[m]["Val Log Loss"] for m in model_names]
     top3 = [results_dict[m]["Val Top-3 Accuracy"] for m in model_names]
 
-    x = np.arange(len(model_names))
-    width = 0.25
+    y = np.arange(len(model_names))
+    height = 0.25
 
     plt.figure(figsize=(10, 6))
 
-    plt.bar(x - width, val_acc, width, label="Val Accuracy")
-    plt.bar(x, top3, width, label="Top-3 Accuracy")
-    plt.bar(x + width, log_loss, width, label="Log Loss")
+    plt.barh(y - height, val_acc, height, label="Val Accuracy")
+    plt.barh(y, top3, height, label="Top-3 Accuracy")
+    plt.barh(y + height, log_loss, height, label="Log Loss")
 
-    plt.xticks(x, model_names)
-    plt.ylabel("Score")
+    plt.yticks(y, model_names)
+    plt.xlabel("Score")
     plt.title("Model Comparison")
     plt.legend()
 
