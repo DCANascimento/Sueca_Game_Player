@@ -105,6 +105,11 @@ def main(path, target_column):
             objective="multi:softprob", 
             eval_metric="mlogloss", 
             random_state=42,
+            colsample_bytree=0.8,
+            learning_rate=0.05,
+            max_depth=6,
+            n_estimators=300,
+            subsample=0.8,
             n_jobs=-1
         ),
     }
