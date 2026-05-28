@@ -9,12 +9,14 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 from sklearn.metrics import make_scorer, top_k_accuracy_score
+from sklearn.model_selection import GridSearchCV
+
 
 CV = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
 # Number of games we want to use as the dataset
 # The current limit is 10000, but we may want less for better performance
-NUM_GAMES = 5000
+NUM_GAMES = 10000
 
 
 # New top k accuracy metric

@@ -1,0 +1,13 @@
+=== Logistic Regression Grid Search Results ===
+Best Params: {'logisticregression__C': 10.0, 'logisticregression__solver': 'lbfgs'}
+Train Accuracy: 0.6971
+Val Accuracy: 0.6784
+Val Accuracy Std: +/- 0.0021
+Val Log Loss: 0.6918
+Val Top-3 Accuracy: 0.9503
+Fitting final Logistic Regression model on full training subset...
+/home/goncalo/Desktop/1S_3M/PEI/venv/lib/python3.12/site-packages/sklearn/linear_model/_logistic.py:1184: FutureWarning: 'n_jobs' has no effect since 1.8 and will be removed in 1.10. You provided 'n_jobs=-1', please leave it unspecified.
+  warnings.warn(msg, category=FutureWarning)
+  --> Final Unseen Holdout Test Accuracy (Top-1): 0.6788
+  --> Final Unseen Holdout Top-3 Accuracy: 0.9489
+
