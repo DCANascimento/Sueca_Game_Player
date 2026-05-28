@@ -21,3 +21,122 @@ Val Top-3 Accuracy: 0.9789
 Fitting final XGBoost model on full training subset...
   --> Final Unseen Holdout Test Accuracy (Top-1): 0.7973
   --> Final Unseen Holdout Top-3 Accuracy: 0.9797
+
+=== Gradient Boosting Grid Search Results ===
+Best Params: {'learning_rate': 0.03, 'max_depth': None, 'max_leaf_nodes': 31, 'min_samples_leaf': 20}
+Train Accuracy: 0.8597
+Val Accuracy: 0.7978
+Val Accuracy Std: +/- 0.0013
+Val Log Loss: 0.4381
+Val Top-3 Accuracy: 0.9800
+Fitting final Gradient Boosting model on full training subset...
+Binning 0.295 GB of training data: 1.022 s
+Binning 0.033 GB of validation data: 0.022 s
+Fitting gradient boosted rounds:
+[1/100] 40 trees, 1240 leaves (31 on avg), max depth = 17, train loss: 2.91237, val loss: 2.91345, in 0.863s
+[2/100] 40 trees, 1240 leaves (31 on avg), max depth = 17, train loss: 2.58654, val loss: 2.58979, in 0.881s
+[3/100] 40 trees, 1240 leaves (31 on avg), max depth = 16, train loss: 2.35617, val loss: 2.36080, in 0.880s
+[4/100] 40 trees, 1240 leaves (31 on avg), max depth = 15, train loss: 2.17602, val loss: 2.18183, in 0.863s
+[5/100] 40 trees, 1240 leaves (31 on avg), max depth = 16, train loss: 2.02816, val loss: 2.03498, in 0.853s
+[6/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 1.90210, val loss: 1.90968, in 0.857s
+[7/100] 40 trees, 1240 leaves (31 on avg), max depth = 15, train loss: 1.79329, val loss: 1.80160, in 0.857s
+[8/100] 40 trees, 1240 leaves (31 on avg), max depth = 16, train loss: 1.69706, val loss: 1.70589, in 0.857s
+[9/100] 40 trees, 1240 leaves (31 on avg), max depth = 17, train loss: 1.61133, val loss: 1.62080, in 0.848s
+[10/100] 40 trees, 1240 leaves (31 on avg), max depth = 17, train loss: 1.53401, val loss: 1.54407, in 0.858s
+[11/100] 40 trees, 1240 leaves (31 on avg), max depth = 16, train loss: 1.46424, val loss: 1.47484, in 0.850s
+[12/100] 40 trees, 1240 leaves (31 on avg), max depth = 17, train loss: 1.40059, val loss: 1.41165, in 0.843s
+[13/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 1.34195, val loss: 1.35353, in 0.861s
+[14/100] 40 trees, 1240 leaves (31 on avg), max depth = 17, train loss: 1.28831, val loss: 1.30050, in 0.851s
+[15/100] 40 trees, 1240 leaves (31 on avg), max depth = 17, train loss: 1.23873, val loss: 1.25137, in 0.884s
+[16/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 1.19271, val loss: 1.20579, in 0.858s
+[17/100] 40 trees, 1240 leaves (31 on avg), max depth = 21, train loss: 1.14990, val loss: 1.16337, in 0.895s
+[18/100] 40 trees, 1240 leaves (31 on avg), max depth = 17, train loss: 1.11007, val loss: 1.12397, in 0.891s
+[19/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 1.07275, val loss: 1.08701, in 0.854s
+[20/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 1.03779, val loss: 1.05243, in 0.853s
+[21/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 1.00511, val loss: 1.02006, in 0.840s
+[22/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 0.97441, val loss: 0.98971, in 0.844s
+[23/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.94537, val loss: 0.96093, in 0.844s
+[24/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 0.91845, val loss: 0.93437, in 0.839s
+[25/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.89278, val loss: 0.90905, in 0.844s
+[26/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.86883, val loss: 0.88547, in 0.839s
+[27/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 0.84614, val loss: 0.86304, in 0.852s
+[28/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 0.82481, val loss: 0.84194, in 0.862s
+[29/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 0.80450, val loss: 0.82199, in 0.837s
+[30/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 0.78534, val loss: 0.80306, in 0.849s
+[31/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.76722, val loss: 0.78516, in 0.903s
+[32/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 0.75014, val loss: 0.76835, in 0.876s
+[33/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.73393, val loss: 0.75240, in 0.846s
+[34/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.71848, val loss: 0.73720, in 0.841s
+[35/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.70398, val loss: 0.72298, in 0.849s
+[36/100] 40 trees, 1240 leaves (31 on avg), max depth = 22, train loss: 0.69017, val loss: 0.70944, in 0.851s
+[37/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.67714, val loss: 0.69666, in 0.842s
+[38/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.66469, val loss: 0.68450, in 0.833s
+[39/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 0.65283, val loss: 0.67289, in 0.874s
+[40/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.64160, val loss: 0.66192, in 0.936s
+[41/100] 40 trees, 1240 leaves (31 on avg), max depth = 21, train loss: 0.63078, val loss: 0.65140, in 0.915s
+[42/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.62055, val loss: 0.64146, in 0.898s
+[43/100] 40 trees, 1240 leaves (31 on avg), max depth = 20, train loss: 0.61078, val loss: 0.63199, in 0.832s
+[44/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.60141, val loss: 0.62294, in 0.833s
+[45/100] 40 trees, 1240 leaves (31 on avg), max depth = 21, train loss: 0.59250, val loss: 0.61440, in 0.851s
+[46/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.58386, val loss: 0.60603, in 0.854s
+[47/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.57565, val loss: 0.59812, in 0.847s
+[48/100] 40 trees, 1240 leaves (31 on avg), max depth = 21, train loss: 0.56787, val loss: 0.59061, in 0.836s
+[49/100] 40 trees, 1240 leaves (31 on avg), max depth = 20, train loss: 0.56034, val loss: 0.58337, in 0.841s
+[50/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.55318, val loss: 0.57654, in 0.841s
+[51/100] 40 trees, 1240 leaves (31 on avg), max depth = 20, train loss: 0.54626, val loss: 0.56992, in 0.844s
+[52/100] 40 trees, 1240 leaves (31 on avg), max depth = 21, train loss: 0.53976, val loss: 0.56381, in 0.848s
+[53/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 0.53347, val loss: 0.55781, in 0.864s
+[54/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 0.52739, val loss: 0.55210, in 0.826s
+[55/100] 40 trees, 1240 leaves (31 on avg), max depth = 20, train loss: 0.52163, val loss: 0.54665, in 0.835s
+[56/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.51611, val loss: 0.54146, in 0.838s
+[57/100] 40 trees, 1240 leaves (31 on avg), max depth = 23, train loss: 0.51074, val loss: 0.53644, in 0.837s
+[58/100] 40 trees, 1240 leaves (31 on avg), max depth = 21, train loss: 0.50565, val loss: 0.53172, in 0.816s
+[59/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.50068, val loss: 0.52711, in 0.820s
+[60/100] 40 trees, 1240 leaves (31 on avg), max depth = 20, train loss: 0.49596, val loss: 0.52277, in 0.812s
+[61/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 0.49140, val loss: 0.51856, in 0.821s
+[62/100] 40 trees, 1240 leaves (31 on avg), max depth = 21, train loss: 0.48696, val loss: 0.51447, in 0.825s
+[63/100] 40 trees, 1240 leaves (31 on avg), max depth = 22, train loss: 0.48269, val loss: 0.51056, in 0.805s
+[64/100] 40 trees, 1240 leaves (31 on avg), max depth = 20, train loss: 0.47857, val loss: 0.50682, in 0.814s
+[65/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.47462, val loss: 0.50323, in 0.811s
+[66/100] 40 trees, 1240 leaves (31 on avg), max depth = 22, train loss: 0.47082, val loss: 0.49979, in 0.853s
+[67/100] 40 trees, 1240 leaves (31 on avg), max depth = 20, train loss: 0.46717, val loss: 0.49654, in 0.809s
+[68/100] 40 trees, 1240 leaves (31 on avg), max depth = 20, train loss: 0.46363, val loss: 0.49331, in 0.817s
+[69/100] 40 trees, 1240 leaves (31 on avg), max depth = 20, train loss: 0.46021, val loss: 0.49027, in 0.801s
+[70/100] 40 trees, 1240 leaves (31 on avg), max depth = 22, train loss: 0.45693, val loss: 0.48734, in 0.823s
+[71/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 0.45370, val loss: 0.48450, in 0.801s
+[72/100] 40 trees, 1240 leaves (31 on avg), max depth = 21, train loss: 0.45066, val loss: 0.48189, in 0.781s
+[73/100] 40 trees, 1240 leaves (31 on avg), max depth = 21, train loss: 0.44775, val loss: 0.47937, in 0.801s
+[74/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.44481, val loss: 0.47677, in 0.792s
+[75/100] 40 trees, 1240 leaves (31 on avg), max depth = 22, train loss: 0.44203, val loss: 0.47436, in 0.781s
+[76/100] 40 trees, 1240 leaves (31 on avg), max depth = 21, train loss: 0.43926, val loss: 0.47190, in 0.782s
+[77/100] 40 trees, 1240 leaves (31 on avg), max depth = 20, train loss: 0.43658, val loss: 0.46960, in 0.790s
+[78/100] 40 trees, 1240 leaves (31 on avg), max depth = 22, train loss: 0.43402, val loss: 0.46742, in 0.778s
+[79/100] 40 trees, 1240 leaves (31 on avg), max depth = 20, train loss: 0.43150, val loss: 0.46523, in 0.797s
+[80/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.42910, val loss: 0.46319, in 0.796s
+[81/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.42675, val loss: 0.46124, in 0.776s
+[82/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.42447, val loss: 0.45937, in 0.777s
+[83/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 0.42221, val loss: 0.45748, in 0.772s
+[84/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.42008, val loss: 0.45574, in 0.760s
+[85/100] 40 trees, 1240 leaves (31 on avg), max depth = 21, train loss: 0.41797, val loss: 0.45402, in 0.747s
+[86/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 0.41594, val loss: 0.45238, in 0.799s
+[87/100] 40 trees, 1240 leaves (31 on avg), max depth = 17, train loss: 0.41399, val loss: 0.45079, in 0.762s
+[88/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.41209, val loss: 0.44929, in 0.742s
+[89/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.41020, val loss: 0.44778, in 0.732s
+[90/100] 40 trees, 1240 leaves (31 on avg), max depth = 17, train loss: 0.40842, val loss: 0.44641, in 0.731s
+[91/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.40671, val loss: 0.44505, in 0.728s
+[92/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.40499, val loss: 0.44371, in 0.730s
+[93/100] 40 trees, 1240 leaves (31 on avg), max depth = 20, train loss: 0.40331, val loss: 0.44242, in 0.780s
+[94/100] 40 trees, 1240 leaves (31 on avg), max depth = 20, train loss: 0.40173, val loss: 0.44125, in 0.809s
+[95/100] 40 trees, 1240 leaves (31 on avg), max depth = 17, train loss: 0.40017, val loss: 0.44005, in 0.761s
+[96/100] 40 trees, 1240 leaves (31 on avg), max depth = 19, train loss: 0.39860, val loss: 0.43885, in 0.773s
+[97/100] 40 trees, 1240 leaves (31 on avg), max depth = 17, train loss: 0.39705, val loss: 0.43766, in 0.761s
+[98/100] 40 trees, 1240 leaves (31 on avg), max depth = 20, train loss: 0.39556, val loss: 0.43651, in 0.793s
+[99/100] 40 trees, 1240 leaves (31 on avg), max depth = 17, train loss: 0.39412, val loss: 0.43545, in 0.765s
+[100/100] 40 trees, 1240 leaves (31 on avg), max depth = 18, train loss: 0.39271, val loss: 0.43438, in 0.762s
+Fit 4000 trees in 84.236 s, (124000 total leaves)
+Time spent computing histograms: 72.779s
+Time spent finding best splits:  1.630s
+Time spent applying splits:      1.991s
+Time spent predicting:           0.669s
+  --> Final Unseen Holdout Test Accuracy (Top-1): 0.7995
+  --> Final Unseen Holdout Top-3 Accuracy: 0.9810

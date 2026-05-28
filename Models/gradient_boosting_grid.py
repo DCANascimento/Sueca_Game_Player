@@ -54,7 +54,7 @@ def main(path, target_column):
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    model = HistGradientBoostingClassifier(random_state=42)
+    model = HistGradientBoostingClassifier(random_state=42, verbose=2)
     param_grid = {
         "learning_rate": [0.03, 0.1],
         "max_depth": [None, 8, 12],
@@ -74,6 +74,7 @@ def main(path, target_column):
         refit="top3_accuracy",
         n_jobs=-1,
         return_train_score=True,
+        verbose=2,
     )
     search.fit(X_train, y_train)
 

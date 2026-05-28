@@ -98,9 +98,9 @@ def main(path, target_column):
     models = {
         "Logistic Regression": make_pipeline(
             StandardScaler(),
-            LogisticRegression(max_iter=1000, random_state=42),
+            LogisticRegression(max_iter=1000, random_state=42, solver='lbfgs', C=10.0),
         ),
-        "Gradient Boosting": HistGradientBoostingClassifier(random_state=42),
+        "Gradient Boosting": HistGradientBoostingClassifier(random_state=42, learning_rate=0.03, max_depth=None, max_leaf_nodes=31, min_samples_leaf=20),
         "XGBoost": XGBClassifier(
             objective="multi:softprob", 
             eval_metric="mlogloss", 
