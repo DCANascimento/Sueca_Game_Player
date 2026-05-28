@@ -72,23 +72,25 @@ def expand_vector_columns(df, columns_to_expand):
 
 def plot_model_comparison(results_dict, filename="model_comparison.png"):
     model_names = list(results_dict.keys())
+    metrics_names = ["Val Accuracy", "Val Top-3 Accuracy", "Val Log Loss"]
 
-    val_acc = [results_dict[m]["Val Accuracy"] for m in model_names]
-    log_loss = [results_dict[m]["Val Log Loss"] for m in model_names]
-    top3 = [results_dict[m]["Val Top-3 Accuracy"] for m in model_names]
+    data = {
+        metric: [results_dict[m][metric] for m in model_names]
+        for metric in metrics_names
+    }
 
-    y = np.arange(len(model_names))
-    height = 0.25
+    x = np.arange(len(metrics_names))
+    width = 0.25
 
     plt.figure(figsize=(10, 6))
 
-    plt.barh(y - height, val_acc, height, label="Val Accuracy")
-    plt.barh(y, top3, height, label="Top-3 Accuracy")
-    plt.barh(y + height, log_loss, height, label="Log Loss")
+    for i, model in enumerate(model_names):
+        values = [results_dict[model][metric] for metric in metrics_names]
+        plt.bar(x + i * width, values, width, label=model)
 
-    plt.yticks(y, model_names)
-    plt.xlabel("Score")
-    plt.title("Model Comparison")
+    plt.xticks(x + width, metrics_names)
+    plt.ylabel("Score")
+    plt.title("Model Comparison (Grouped by Metric)")
     plt.legend()
 
     plt.tight_layout()
