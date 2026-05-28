@@ -61,11 +61,11 @@ def main(path, target_column):
         n_jobs=-1,
     )
     param_grid = {
-        "n_estimators": [200, 400],
+        "n_estimators": [200, 300],
         "max_depth": [4, 6],
-        "learning_rate": [0.05, 0.1],
-        "subsample": [0.8, 1.0],
-        "colsample_bytree": [0.8, 1.0],
+        "learning_rate": [0.05],
+        "subsample": [0.8],
+        "colsample_bytree": [0.8],
     }
 
     search = GridSearchCV(
@@ -80,6 +80,7 @@ def main(path, target_column):
         refit="top3_accuracy",
         n_jobs=-1,
         return_train_score=True,
+        verbose=2,
     )
     search.fit(X_train, y_train)
 

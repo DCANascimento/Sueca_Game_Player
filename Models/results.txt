@@ -11,3 +11,13 @@ Fitting final Logistic Regression model on full training subset...
   --> Final Unseen Holdout Test Accuracy (Top-1): 0.6788
   --> Final Unseen Holdout Top-3 Accuracy: 0.9489
 
+=== XGBoost Grid Search Results ===
+Best Params: {'colsample_bytree': 0.8, 'learning_rate': 0.05, 'max_depth': 6, 'n_estimators': 300, 'subsample': 0.8}
+Train Accuracy: 0.8841
+Val Accuracy: 0.7971
+Val Accuracy Std: +/- 0.0011
+Val Log Loss: 0.4215
+Val Top-3 Accuracy: 0.9789
+Fitting final XGBoost model on full training subset...
+  --> Final Unseen Holdout Test Accuracy (Top-1): 0.7973
+  --> Final Unseen Holdout Top-3 Accuracy: 0.9797
