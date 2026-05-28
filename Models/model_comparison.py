@@ -10,6 +10,7 @@ from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 from sklearn.metrics import make_scorer, top_k_accuracy_score
 from sklearn.model_selection import GridSearchCV
+import matplotlib.pyplot as plt
 
 
 CV = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -70,6 +71,31 @@ def expand_vector_columns(df, columns_to_expand):
         df = pd.concat([df] + expanded_dfs, axis=1)
     return df
 
+def plot_model_comparison(results_dict, filename="model_comparison.png"):
+    model_names = list(results_dict.keys())
+
+    val_acc = [results_dict[m]["Val Accuracy"] for m in model_names]
+    log_loss = [results_dict[m]["Val Log Loss"] for m in model_names]
+    top3 = [results_dict[m]["Val Top-3 Accuracy"] for m in model_names]
+
+    y = np.arange(len(model_names))
+    height = 0.25
+
+    plt.figure(figsize=(10, 6))
+
+    plt.barh(y - height, val_acc, height, label="Val Accuracy")
+    plt.barh(y, top3, height, label="Top-3 Accuracy")
+    plt.barh(y + height, log_loss, height, label="Log Loss")
+
+    plt.yticks(y, model_names)
+    plt.xlabel("Score")
+    plt.title("Model Comparison")
+    plt.legend()
+
+    plt.tight_layout()
+    plt.savefig(filename)
+    print(f"\n📊 Saved comparison plot to {filename}")
+
 def main(path, target_column):
     print("Loading data...")
     df = pd.read_csv(path)
@@ -114,9 +140,13 @@ def main(path, target_column):
         ),
     }
 
+    results_summary = {}
+
     for name, model in models.items():
         print(f"\n=== Evaluating {name} via 5-Fold CV ===")
         metrics = eval_model(model, X_train, y_train)
+
+        results_summary[name] = metrics
 
         for metric_name, value in metrics.items():
             if "Std" in metric_name:
@@ -124,18 +154,18 @@ def main(path, target_column):
             else:
                 print(f"  {metric_name}: {value:.4f}")
 
-        # Final Holdout evaluation block
         print(f"Fitting final {name} model on full training subset...")
         model.fit(X_train, y_train)
-        
-        # 1. Standard Top-1 Accuracy
+
         test_acc = model.score(X_test, y_test)
         print(f"  --> Final Unseen Holdout Test Accuracy (Top-1): {test_acc:.4f}")
-        
-        # 2. Top-3 Accuracy on Holdout
+
         test_probabilities = model.predict_proba(X_test)
-        test_top3_acc = top_k_accuracy_score(y_test, test_probabilities, k=3, labels=list(range(40)))
+        test_top3_acc = top_k_accuracy_score(
+            y_test, test_probabilities, k=3, labels=list(range(40))
+        )
         print(f"  --> Final Unseen Holdout Top-3 Accuracy: {test_top3_acc:.4f}")
+    plot_model_comparison(results_summary)
 
 
 if __name__ == "__main__":
